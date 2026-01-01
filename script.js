@@ -449,7 +449,7 @@ function playSimulationAudio() {
 
     setTimeout(() => {
         // Play Audio
-        currentAudio = new Audio('http://googleusercontent.com/file_content/4');
+        currentAudio = new Audio('ElevenLabs_2026-01-01T10_50_09_Parveen - Rich, Confident and Smooth_pvc_sp100_s61_sb55_se31_b_m2.mp3');
         currentAudio.play().catch(e => console.error("Audio play failed", e));
 
         // Update UI to "Active Call" state
