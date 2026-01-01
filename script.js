@@ -24,6 +24,7 @@ let currentScripts = [];
 let selectedTestScript = null;
 let allClientsCache = [];
 let creditBalance = 24.50; // Mock starting balance
+let currentAudio = null; // Track audio state
 
 // --- Auth & Data Listeners ---
 onAuthStateChanged(auth, (user) => {
@@ -394,35 +395,101 @@ function toggleIntegration(el) {
     }
 }
 
-// --- Feature 5: Live Call Monitor ---
+// --- Feature 5: Live Call Monitor (Audio Simulation) ---
 function renderLiveCall(isActive) {
     const card = document.getElementById('liveCallCard');
     if(!card) return;
 
+    // Button to trigger audio simulation
+    const callButtonHtml = `
+        <button onclick="playSimulationAudio()" class="mt-3 w-full py-2 rounded bg-green-600/20 hover:bg-green-600/30 text-xs text-green-400 border border-green-600/50 flex items-center justify-center gap-2 transition-colors">
+            <i class="fa-solid fa-phone-volume"></i> Call Now
+        </button>
+    `;
+
     if(!isActive) {
-        card.innerHTML = `<div class="p-8 text-center text-gray-500 text-xs">Model offline. No active calls.</div>`;
+        card.innerHTML = `
+            <div class="p-6 text-center">
+                <p class="text-gray-500 text-xs mb-2">Model offline. No active traffic.</p>
+            </div>
+        `;
         return;
     }
 
-    // Deterministic state for active client (Simulated active call)
-    card.className = "glass-panel rounded-xl overflow-hidden border-l-2 border-l-red-500";
+    // Idle state willing to accept call
+    card.className = "glass-panel rounded-xl overflow-hidden border-l-2 border-l-gray-700";
     card.innerHTML = `
-        <div class="p-3 bg-red-500/10 flex justify-between items-center">
-            <span class="text-xs text-red-400 font-bold uppercase animate-pulse">● Live Call</span>
-            <span class="text-xs text-gray-400">00:${Math.floor(Math.random()*50)+10}</span>
-        </div>
-        <div class="p-4">
-            <p class="text-sm text-white font-medium mb-1">+91 98*** **${Math.floor(Math.random()*1000)}</p>
-            <p class="text-xs text-gray-400 mb-3">Intent: <span class="text-accent-400">Payment Inquiry</span></p>
-            <button onclick="listenIn()" class="w-full py-1.5 rounded bg-gray-800 hover:bg-gray-700 text-xs text-white border border-gray-600 flex items-center justify-center gap-2">
-                <i class="fa-solid fa-headphones"></i> Listen In
-            </button>
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-xs text-gray-400 font-bold uppercase">System Status</span>
+                <span class="text-xs text-success bg-success/10 px-2 py-1 rounded">Idle</span>
+            </div>
+            <p class="text-sm text-white mb-4">Waiting for inbound traffic or manual trigger...</p>
+            ${callButtonHtml}
         </div>
     `;
 }
 
-function listenIn() {
-    alert("Connecting to secure SIP stream...\n(Audio would play here in production)");
+function playSimulationAudio() {
+    if(currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+
+    // UI Updates to show call starting
+    const card = document.getElementById('liveCallCard');
+    if(card) {
+        card.innerHTML = `
+            <div class="p-8 text-center">
+                <div class="inline-block w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-2"></div>
+                <p class="text-white text-sm">Connecting...</p>
+            </div>
+        `;
+    }
+
+    setTimeout(() => {
+        // Play Audio
+        currentAudio = new Audio('http://googleusercontent.com/file_content/4');
+        currentAudio.play().catch(e => console.error("Audio play failed", e));
+
+        // Update UI to "Active Call" state
+        if(card) {
+             card.className = "glass-panel rounded-xl overflow-hidden border-l-2 border-l-red-500";
+             card.innerHTML = `
+                <div class="p-3 bg-red-500/10 flex justify-between items-center">
+                    <span class="text-xs text-red-400 font-bold uppercase animate-pulse">● Live Call</span>
+                    <span class="text-xs text-gray-400">Audio Playing</span>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-white font-medium mb-1">Simulated Customer</p>
+                    <p class="text-xs text-gray-400 mb-3">Intent: <span class="text-accent-400">Payment Inquiry</span></p>
+                    <div class="flex gap-2 items-center justify-center my-4">
+                         <div class="w-1 bg-red-500 h-3 animate-pulse"></div>
+                         <div class="w-1 bg-red-500 h-5 animate-pulse" style="animation-delay: 0.1s"></div>
+                         <div class="w-1 bg-red-500 h-2 animate-pulse" style="animation-delay: 0.2s"></div>
+                         <div class="w-1 bg-red-500 h-4 animate-pulse" style="animation-delay: 0.3s"></div>
+                         <div class="w-1 bg-red-500 h-3 animate-pulse" style="animation-delay: 0.4s"></div>
+                    </div>
+                    <button onclick="stopSimulationAudio()" class="w-full py-1.5 rounded bg-red-600 hover:bg-red-700 text-xs text-white border border-red-500 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-phone-slash"></i> End Call
+                    </button>
+                </div>
+            `;
+        }
+
+        currentAudio.onended = () => {
+            renderLiveCall(true); // Revert to idle state
+        };
+
+    }, 1500);
+}
+
+function stopSimulationAudio() {
+    if(currentAudio) {
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+    }
+    renderLiveCall(true);
 }
 
 // --- Feature 1: Knowledge Base Logic ---
@@ -647,7 +714,8 @@ window.showSection = showSection;
 window.toggleTranscript = toggleTranscript;
 window.exportData = exportData;
 window.toggleIntegration = toggleIntegration;
-window.listenIn = listenIn;
 window.addDocument = addDocument;
 window.regenerateApiKey = regenerateApiKey;
 window.updateModel = updateModel;
+window.playSimulationAudio = playSimulationAudio;
+window.stopSimulationAudio = stopSimulationAudio;
