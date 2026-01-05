@@ -3,450 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lakhu Teleservices | Voice AI Training Dashboard</title>
-    
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Rekha AI - Lakhu Teleservices</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
-                    colors: {
-                        gray: { 850: '#1f2937', 900: '#111827', 950: '#0B0F19' },
-                        accent: { 500: '#3B82F6', 600: '#2563EB', glow: 'rgba(59, 130, 246, 0.5)' },
-                        success: '#10B981', warning: '#F59E0B', danger: '#EF4444'
-                    },
-                    animation: { 'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite' }
-                }
-            }
-        }
-    </script>
-
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="styles.css">
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Lucide Icons (Global) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Custom Animations for the Orb */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .orb-idle {
+            background: radial-gradient(circle at 30% 30%, #475569, #1e293b);
+            box-shadow: 0 0 20px #334155;
+        }
+        
+        .orb-listening {
+            background: radial-gradient(circle at 30% 30%, #3b82f6, #1d4ed8);
+            box-shadow: 0 0 40px #2563eb;
+            animation: breathe 2s infinite ease-in-out;
+        }
+        
+        .orb-processing {
+            background: radial-gradient(circle at 30% 30%, #f97316, #c2410c);
+            box-shadow: 0 0 40px #ea580c;
+            animation: spin 3s linear infinite;
+        }
+        
+        .orb-speaking {
+            background: radial-gradient(circle at 30% 30%, #22c55e, #15803d);
+            box-shadow: 0 0 50px #16a34a;
+            animation: talk 0.5s infinite alternate;
+        }
+
+        @keyframes breathe {
+            0% { transform: scale(0.95); box-shadow: 0 0 20px #2563eb; }
+            50% { transform: scale(1.05); box-shadow: 0 0 60px #2563eb; }
+            100% { transform: scale(0.95); box-shadow: 0 0 20px #2563eb; }
+        }
+
+        @keyframes talk {
+            0% { transform: scale(1); box-shadow: 0 0 30px #16a34a; }
+            100% { transform: scale(1.1); box-shadow: 0 0 60px #16a34a; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
-<body class="bg-gray-950 text-gray-100 font-sans h-screen overflow-hidden flex selection:bg-accent-600 selection:text-white">
+<body class="bg-slate-950 text-white h-screen overflow-hidden flex flex-col items-center justify-center font-sans">
+    <div id="root" class="w-full h-full flex flex-col"></div>
 
-    <!-- Sidebar -->
-    <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col z-20 hidden md:flex">
-        <div class="p-6 flex items-center gap-3 border-b border-gray-800">
-            <div class="w-8 h-8 rounded bg-gradient-to-br from-accent-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-accent-500/20">
-                <i class="fa-solid fa-wave-square text-white text-sm"></i>
-            </div>
-            <h1 class="font-bold text-lg tracking-tight">Lakhu<span class="text-accent-500">.ai</span></h1>
-        </div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2">Core Platform</div>
-            
-            <button onclick="showSection('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-accent-600/10 text-accent-500 border border-accent-600/20 transition-all">
-                <i class="fa-solid fa-grid-2"></i> Dashboard
-            </button>
-            <button onclick="showSection('clients')" id="nav-clients" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
-                <i class="fa-solid fa-users"></i> Clients
-            </button>
-            <button onclick="showSection('recordings')" id="nav-recordings" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
-                <i class="fa-solid fa-microphone-lines"></i> Recordings
-            </button>
-            
-            <!-- Feature 1: Knowledge Base -->
-            <button onclick="showSection('knowledge')" id="nav-knowledge" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
-                <i class="fa-solid fa-book-open"></i> Knowledge Base
-            </button>
-             <!-- Feature 10: Settings -->
-             <button onclick="showSection('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors">
-                <i class="fa-solid fa-sliders"></i> Settings & API
-            </button>
+        // --- Configuration & Constants ---
 
-            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-6 mb-2 px-2">Active Training</div>
-            <div id="clientList" class="space-y-1">
-                <!-- Clients injected by JS -->
-            </div>
+        const DEFAULT_GEMINI_KEY = "AIzaSyCqQKhHmTy1Vv8cfMTMCCH4vB2fUPJlRLQ";
+        const DEFAULT_ELEVENLABS_KEY = "80050d36791355b078eeb444e5a25ec81e9bb0af33d0b66a7d6fcad8dc9fa925";
+        const DEFAULT_VOICE_ID = "xoV6iGVuOGYHLWjXhVC7"; // Muskan
 
-            <button onclick="openModal('addClientModal')" class="mt-4 w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded border border-dashed border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 hover:bg-gray-800 transition-all">
-                <i class="fa-solid fa-plus"></i> Add New Client
-            </button>
-        </nav>
+        const SCRIPTS = {
+            1: {
+                title: "1. Mahatvapurn Jankari",
+                opener: "Namaskar, mahatvapurn jankari ka call hai. Aapka DishTV recharge khatam hone wala hai. 200 rupaye ka recharge zaruri hai. Connection chalu rakhun?",
+                systemPrompt: `You are Rekha from Lakhu Teleservices (DishTV). 
+                Language: Hindi (speak clearly). If user speaks Gujarati, switch to Gujarati. NEVER speak English unless explicitly asked to translate.
+                Core Rule: Minimum recharge is 200 Rupees. No offers allowed.
+                Context: Alerting user about critical recharge status.
+                Goal: Convince them to recharge 200 Rs immediately to keep connection active.
+                Rebuttals:
+                - If "Yes/Time": Thank them, ask when they will do it.
+                - If "No/Close": Warn about connection cut.
+                - If "Out of Station/TV Broken/Exams": Say minimum balance maintenance is mandatory regardless of usage.
+                - If "New Connection": politely say this department is only for renewals.
+                Keep responses short (under 2 sentences) and professional.`
+            },
+            2: {
+                title: "2. Last Date (Urgency)",
+                opener: "Namaskar, Rekha bol rahi hoon. Aaj aakhri din hai. Shaam 6 baje tak 200 rupaye ka recharge nahi kiya toh connection hamesha ke liye band ho jayega. Connection chalu rakhun?",
+                systemPrompt: `You are Rekha from Lakhu Teleservices (DishTV). 
+                Language: Hindi.
+                Core Rule: DEADLINE IS 6 PM TODAY. Minimum 200 Rs.
+                Tone: Very Urgent, Warning.
+                Goal: Scare them slightly about the deadline. If they miss 6 PM, they have to pay extra reactivation charges.
+                Rebuttals: Emphasize the 6 PM deadline for every excuse. "Sir/Ma'am, 6 baje ke baad charge badh jayega."`
+            },
+            3: {
+                title: "3. Chalu Ya Bandh",
+                opener: "Namaskar, Lakhu Teleservices se service call hai. Aapka connection chalu rakhna chahte ho ya hamesha ke liye band?",
+                systemPrompt: `You are Rekha from Lakhu Teleservices.
+                Language: Hindi.
+                Context: A binary choice service call.
+                Goal: Get a clear "Chalu" (Keep) or "Band" (Close) answer.
+                Logic: 
+                - If "Chalu": Ask to recharge 200 Rs now.
+                - If "Band": Ask "Kya hamesha ke liye band kar de?" to confirm.
+                - Minimum recharge 200 Rs. No offers.`
+            },
+            4: {
+                title: "4. Bandh Ho Chuka Hai",
+                opener: "Namaskar. Ye aakhri call hai. Aapka connection company se band ho chuka hai. Kya dobara chalu karna hai?",
+                systemPrompt: `You are Rekha from Lakhu Teleservices.
+                Language: Hindi.
+                Context: Connection is ALREADY closed/suspended.
+                Goal: Reactivation.
+                Logic: Tell them this is the final chance before data deletion. 
+                - To reactivate: Recharge 200 Rs immediately.
+                - If they refuse: Say "Dhanyavaad, hum file close kar rahe hain."`
+            },
+            5: {
+                title: "5. Offer (Special)",
+                opener: "Namaskar, aapka connection band hai. Kya koi asuwidha ho rahi hai?",
+                systemPrompt: `You are Rekha from Lakhu Teleservices.
+                Language: Hindi.
+                Context: Retention call.
+                Special Rule: THIS IS THE ONLY SCRIPT WITH OFFERS.
+                Offers: 
+                - Recharge 6 months, get 3 months free.
+                - Recharge 1 year, get 6 months free.
+                Goal: Find out why they stopped watching and offer the deal to bring them back.`
+            }
+        };
 
-        <!-- Feature 2: Cost Widget (Updated with IDs) -->
-        <div class="p-4 border-t border-gray-800 bg-gray-900/50">
-            <div class="mb-2 flex justify-between items-center">
-                <span class="text-xs text-gray-400 uppercase font-bold">Credits</span>
-                <span id="creditText" class="text-xs text-white bg-gray-700 px-1.5 rounded">$24.50 left</span>
-            </div>
-            <div class="w-full bg-gray-800 rounded-full h-1.5 mb-1">
-                <div id="creditBar" class="bg-gradient-to-r from-accent-500 to-purple-500 h-1.5 rounded-full" style="width: 65%"></div>
-            </div>
-            <div class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-800">
-                <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center relative">
-                    <i class="fa-solid fa-user-gear text-xs text-gray-300"></i>
-                    <div id="connectionStatus" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-yellow-500 border-2 border-gray-900 rounded-full" title="Connecting to Firebase..."></div>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate">Admin</p>
-                    <p class="text-xs text-gray-500 truncate" id="userIdDisplay">Connecting...</p>
-                </div>
-            </div>
-        </div>
-    </aside>
+        // --- Helper Components ---
 
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-screen relative overflow-hidden bg-gray-950">
-        <!-- Header -->
-        <header class="h-16 glass border-b border-gray-800 flex items-center justify-between px-6 z-10">
-            <div class="flex items-center gap-4">
-                <button class="md:hidden text-gray-400 hover:text-white"><i class="fa-solid fa-bars"></i></button>
-                <div class="flex items-center gap-2 text-sm text-gray-400">
-                    <span id="pageTitle" class="text-gray-500">Overview</span>
-                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                    <span id="headerClientName" class="text-white font-medium">--</span>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-6">
-                <!-- Feature 3: Model Switcher (Functional) -->
-                <div class="hidden md:flex items-center gap-2 text-xs">
-                    <span class="text-gray-500">Model:</span>
-                    <select id="modelSelect" onchange="updateModel(this)" class="bg-gray-900 border border-gray-700 text-white text-xs rounded px-2 py-1 outline-none focus:border-accent-500 cursor-pointer">
-                        <option value="v3.2">v3.2 (Stable)</option>
-                        <option value="v4.0">v4.0 (Canary)</option>
-                        <option value="v2.1">v2.1 (Legacy)</option>
-                    </select>
-                </div>
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            }, [name]);
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
 
-                <div class="px-3 py-1 rounded-full bg-success/10 border border-success/20 flex items-center gap-2">
-                    <div class="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-                    <span class="text-xs font-medium text-success">System Crashing</span>
-                </div>
-            </div>
-        </header>
+        const SettingsModal = ({ isOpen, onClose, settings, onSave }) => {
+            const [localSettings, setLocalSettings] = useState(settings);
 
-        <!-- SECTION 1: DASHBOARD -->
-        <div id="dashboardArea" class="flex-1 overflow-y-auto p-6 space-y-6 relative section-view">
-            <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-accent-900/10 to-transparent pointer-events-none"></div>
+            useEffect(() => { setLocalSettings(settings); }, [settings]);
 
-            <!-- Stats with Feature 9: Region Health -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-0">
-                <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase font-semibold">Training Progress</p>
-                        <h3 id="statProgress" class="text-2xl font-bold text-white mt-1">--</h3>
-                        <span id="statProgressText" class="text-xs text-success flex items-center gap-1 mt-1"></span>
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500"><i class="fa-solid fa-brain"></i></div>
-                </div>
-                <div class="glass-panel p-4 rounded-xl flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase font-semibold">Active Scripts</p>
-                        <h3 id="statScripts" class="text-2xl font-bold text-white mt-1">--</h3>
-                        <span class="text-xs text-gray-500 mt-1">Deployed to Edge</span>
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500"><i class="fa-solid fa-scroll"></i></div>
-                </div>
-                <!-- Feature 9: Region Map Visual (Abstract) -->
-                <div class="glass-panel p-4 rounded-xl flex flex-col justify-between">
-                    <div class="flex justify-between items-start">
-                        <p class="text-xs text-gray-400 uppercase font-semibold">Server Health</p>
-                        <span class="text-xs text-success">Mumbai (ap-south-1)</span>
-                    </div>
-                    <div class="flex items-end gap-1 h-8 mt-2">
-                         <div class="w-1 bg-gray-700 h-full rounded-sm"></div>
-                         <div class="w-1 bg-gray-700 h-3/4 rounded-sm"></div>
-                         <div class="w-1 bg-success h-full rounded-sm animate-pulse"></div>
-                         <div class="w-1 bg-success h-5/6 rounded-sm"></div>
-                         <div class="w-1 bg-gray-700 h-1/2 rounded-sm"></div>
-                    </div>
-                </div>
-                <div class="glass-panel p-4 rounded-xl flex items-center justify-between border-l-4 border-l-success" id="botStatusPanel">
-                    <div>
-                        <p class="text-xs text-gray-400 uppercase font-semibold">Bot Status</p>
-                        <h3 id="statBotStatus" class="text-xl font-bold text-white mt-1">--</h3>
-                        <span id="statLatency" class="text-xs text-gray-400 mt-1">--</span>
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-success/10 flex items-center justify-center text-success animate-pulse"><i class="fa-solid fa-robot"></i></div>
-                </div>
-            </div>
+            if (!isOpen) return null;
 
-            <!-- Main Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left: Details -->
-                <div class="lg:col-span-2 space-y-6">
-                    
-                    <!-- Main Client Card -->
-                    <div class="glass-panel p-6 rounded-xl border-t border-t-accent-500/50">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="flex items-center gap-3">
-                                    <h2 id="mainClientName" class="text-xl font-bold text-white">--</h2>
-                                    <span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-700 text-gray-300">Outbound</span>
-                                    <span id="mainClientStatus" class="px-2 py-0.5 rounded text-xs font-medium bg-gray-800 text-gray-500 border border-gray-700">Loading...</span>
-                                </div>
-                                <p id="clientMeta" class="text-sm text-gray-400 mt-1">--</p>
-                                <p id="clientGoalDisplay" class="text-xs text-gray-500 mt-2 bg-gray-800/50 inline-block px-2 py-1 rounded border border-gray-700">--</p>
-                            </div>
-                            <button id="startTestBtn" onclick="initiateTestingFlow()" class="bg-gradient-to-r from-accent-600 to-indigo-600 hover:from-accent-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-lg shadow-lg shadow-accent-600/20 font-medium flex items-center gap-2 transition-all transform hover:scale-105">
-                                <i class="fa-solid fa-play"></i> <span>Start Testing</span>
+            return (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-xl font-bold text-white">Settings</h2>
+                            <button onClick={onClose} className="text-slate-400 hover:text-white">
+                                <Icon name="x" />
                             </button>
                         </div>
-                        <div class="mt-8">
-                            <h3 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2"><i class="fa-solid fa-file-code text-gray-500"></i> Script Status</h3>
-                            <div id="scriptsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-1">Gemini API Key</label>
+                                <input 
+                                    type="password" 
+                                    value={localSettings.geminiKey}
+                                    onChange={(e) => setLocalSettings({...localSettings, geminiKey: e.target.value})}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-1">ElevenLabs API Key</label>
+                                <input 
+                                    type="password" 
+                                    value={localSettings.elevenLabsKey}
+                                    onChange={(e) => setLocalSettings({...localSettings, elevenLabsKey: e.target.value})}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-1">Voice ID</label>
+                                <input 
+                                    type="text" 
+                                    value={localSettings.voiceId}
+                                    onChange={(e) => setLocalSettings({...localSettings, voiceId: e.target.value})}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 text-slate-300 hover:text-white">Cancel</button>
+                            <button 
+                                onClick={() => { onSave(localSettings); onClose(); }}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium"
+                            >
+                                Save Configuration
+                            </button>
                         </div>
                     </div>
+                </div>
+            );
+        };
 
-                    <!-- Feature 4: Integrations Panel (Dynamic ID) -->
-                    <div class="glass-panel p-6 rounded-xl">
-                        <h3 class="text-sm font-semibold text-white mb-4">Integrations Health</h3>
-                        <div id="integrationsGrid" class="grid grid-cols-3 gap-4">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
+        // --- Main App Component ---
 
-                    <!-- Chart -->
-                    <div class="glass-panel p-6 rounded-xl">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-semibold text-white">Recording Dataset Metrics</h3>
+        const App = () => {
+            // State
+            const [status, setStatus] = useState("idle"); // idle, speaking, listening, processing
+            const statusRef = useRef("idle"); // Ref to keep track of status in event listeners
+            
+            const [scriptId, setScriptId] = useState(1);
+            const [transcript, setTranscript] = useState([]);
+            const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+            const [errorMsg, setErrorMsg] = useState(null);
+            
+            // Settings State with Persistence
+            const [settings, setSettings] = useState(() => {
+                const saved = localStorage.getItem("rekha_settings");
+                return saved ? JSON.parse(saved) : {
+                    geminiKey: DEFAULT_GEMINI_KEY,
+                    elevenLabsKey: DEFAULT_ELEVENLABS_KEY,
+                    voiceId: DEFAULT_VOICE_ID
+                };
+            });
+
+            // Refs
+            const recognitionRef = useRef(null);
+            const audioRef = useRef(new Audio());
+            const chatHistoryRef = useRef([]); 
+
+            // Update status ref whenever status state changes
+            useEffect(() => {
+                statusRef.current = status;
+            }, [status]);
+
+            // Initialize Speech Recognition
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window) {
+                    const recognition = new webkitSpeechRecognition();
+                    recognition.continuous = false; // We handle restart manually for better control
+                    recognition.interimResults = false;
+                    recognition.lang = 'hi-IN'; // Default Hindi
+                    
+                    recognition.onstart = () => {
+                        console.log("Recognition started");
+                        if (statusRef.current !== 'listening') {
+                             // Only update if not already set (prevents flicker)
+                             // This is mostly for visual sync if manually triggered
+                        }
+                    };
+
+                    recognition.onresult = (event) => {
+                        const text = event.results[0][0].transcript;
+                        console.log("Recognition result:", text);
+                        if (text && text.trim().length > 0) {
+                            handleUserSpeech(text);
+                        }
+                    };
+
+                    recognition.onerror = (event) => {
+                        console.error("Speech Recognition Error", event.error);
+                        if(event.error === 'not-allowed') {
+                            setErrorMsg("Microphone access denied. Please allow microphone permissions.");
+                            setStatus("idle");
+                        }
+                        // 'no-speech' is handled by onend
+                    };
+
+                    recognition.onend = () => {
+                        console.log("Recognition ended. Current status:", statusRef.current);
+                        // CRITICAL FIX: If we are still in 'listening' mode (meaning we didn't get a result yet),
+                        // restart the recognition immediately. Browsers stop it on silence.
+                        if (statusRef.current === 'listening') {
+                            try {
+                                recognition.start();
+                            } catch (e) {
+                                console.log("Restart failed", e);
+                            }
+                        }
+                    };
+
+                    recognitionRef.current = recognition;
+                } else {
+                    setErrorMsg("Your browser does not support Web Speech API (Use Chrome).");
+                }
+            }, [settings]); // Re-init if settings change
+
+            // --- Logic Functions ---
+
+            const saveSettings = (newSettings) => {
+                setSettings(newSettings);
+                localStorage.setItem("rekha_settings", JSON.stringify(newSettings));
+            };
+
+            const addToTranscript = (role, text) => {
+                setTranscript(prev => [...prev, { role, text }]);
+                chatHistoryRef.current.push({ 
+                    role: role === "User" ? "user" : "model", 
+                    parts: [{ text: text }] 
+                });
+            };
+
+            const playAudio = async (text) => {
+                try {
+                    setStatus("processing"); // Momentary processing state while fetching audio
+                    
+                    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${settings.voiceId}`, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': settings.elevenLabsKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            model_id: "eleven_multilingual_v2",
+                            voice_settings: { stability: 0.5, similarity_boost: 0.8 }
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("ElevenLabs API Error");
+
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    
+                    audioRef.current.src = url;
+                    audioRef.current.playbackRate = 1.15; // Speed increased by 15%
+                    
+                    setStatus("speaking");
+                    addToTranscript("Rekha", text);
+
+                    audioRef.current.onended = () => {
+                        // After AI speaks, start listening for user
+                        startListening();
+                    };
+                    
+                    await audioRef.current.play();
+
+                } catch (err) {
+                    setErrorMsg("Audio Generation Failed: " + err.message);
+                    setStatus("idle");
+                }
+            };
+
+            const startListening = () => {
+                setStatus("listening");
+                if (recognitionRef.current) {
+                    try {
+                        recognitionRef.current.start();
+                    } catch (e) {
+                        // Already started or busy, which is fine
+                        console.log("Recognition start called but already active/busy");
+                    }
+                }
+            };
+
+            const handleUserSpeech = async (userText) => {
+                // Immediately switch state to processing to prevent 'onend' from restarting listener
+                setStatus("processing");
+                statusRef.current = "processing"; // Force ref update for immediate safety in event loop
+
+                addToTranscript("User", userText);
+
+                try {
+                    // Call Gemini
+                    const script = SCRIPTS[scriptId];
+                    const systemPrompt = script.systemPrompt;
+                    
+                    let historyPayload = [];
+                    // Add previous turns
+                    const recentHistory = chatHistoryRef.current.slice(-6, -1); 
+                    
+                    historyPayload = [
+                        { role: "user", parts: [{ text: systemPrompt }] },
+                        { role: "model", parts: [{ text: "Samajh gayi. Main Rekha hoon. Boliye." }] },
+                        ...recentHistory,
+                        { role: "user", parts: [{ text: userText }] }
+                    ];
+
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${settings.geminiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ contents: historyPayload })
+                    });
+
+                    if (!response.ok) throw new Error("Gemini API Error");
+
+                    const data = await response.json();
+                    const aiText = data.candidates[0].content.parts[0].text;
+
+                    // Speak the response
+                    playAudio(aiText);
+
+                } catch (err) {
+                    setErrorMsg("AI Processing Failed: " + err.message);
+                    setStatus("idle");
+                }
+            };
+
+            const startCall = () => {
+                setErrorMsg(null);
+                setTranscript([]);
+                chatHistoryRef.current = [];
+                
+                // Speak Opener
+                const opener = SCRIPTS[scriptId].opener;
+                
+                chatHistoryRef.current.push({ role: "model", parts: [{ text: opener }] });
+                playAudio(opener); 
+            };
+
+            const hangupCall = () => {
+                setStatus("idle"); // This will stop the auto-restart in onend
+                statusRef.current = "idle";
+                if (recognitionRef.current) recognitionRef.current.stop();
+                audioRef.current.pause();
+                audioRef.current.currentTime = 0;
+            };
+
+            // --- Render ---
+
+            return (
+                <div className="flex flex-col h-full w-full max-w-lg mx-auto bg-slate-900 border-x border-slate-800 relative shadow-2xl">
+                    
+                    {/* Header */}
+                    <header className="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/90 backdrop-blur z-10">
+                        <div className="flex flex-col">
+                            <h1 className="text-lg font-bold text-white tracking-wide">LAKHU TELESERVICES</h1>
+                            <span className="text-xs text-blue-400 font-medium">AI VOICE ASSISTANT: REKHA</span>
                         </div>
-                        <div class="relative h-48 w-full"><canvas id="recordingsChart"></canvas></div>
-                        <div class="mt-4 flex items-center justify-between text-sm border-t border-gray-700 pt-4">
-                            <div class="flex gap-4">
-                                <div><span class="block text-gray-500 text-xs">Total Needed</span><span id="recsNeededDisplay" class="font-mono text-white">--</span></div>
-                                <div><span class="block text-gray-500 text-xs">Current</span><span id="currentRecs" class="font-mono text-success">--</span></div>
+                        <button onClick={() => setIsSettingsOpen(true)} className="p-2 text-slate-400 hover:text-white transition-colors">
+                            <Icon name="settings" />
+                        </button>
+                    </header>
+
+                    {/* Script Selector */}
+                    <div className="px-4 py-3 bg-slate-800/50">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 block">Active Script</label>
+                        <div className="relative">
+                            <select 
+                                value={scriptId} 
+                                onChange={(e) => setScriptId(Number(e.target.value))}
+                                disabled={status !== "idle"}
+                                className="w-full bg-slate-900 text-white border border-slate-700 rounded-lg p-3 appearance-none focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer disabled:opacity-50"
+                            >
+                                {Object.keys(SCRIPTS).map(id => (
+                                    <option key={id} value={id}>{SCRIPTS[id].title}</option>
+                                ))}
+                            </select>
+                            <div className="absolute right-3 top-3.5 text-slate-400 pointer-events-none">
+                                <Icon name="chevron-down" size={16} />
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Right: Files & Logs -->
-                <div class="space-y-6">
-                    <!-- Feature 5: Live Call Monitor (Dynamic ID) -->
-                    <div id="liveCallCard" class="glass-panel rounded-xl overflow-hidden border-l-2 border-l-gray-700">
-                        <!-- Content Injected via JS -->
-                        <div class="p-8 text-center text-gray-500 text-xs">No active calls.</div>
-                    </div>
-
-                    <div class="glass-panel rounded-xl overflow-hidden">
-                        <div class="p-4 border-b border-gray-700 bg-gray-800/50 flex justify-between items-center">
-                            <h3 class="text-sm font-semibold text-white">Asset Management</h3>
-                            <button class="p-1.5 hover:bg-gray-700 rounded text-gray-400 transition-colors"><i class="fa-solid fa-upload"></i></button>
+                    {/* Main Visualizer Area */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative min-h-[300px]">
+                        
+                        {/* Status Label */}
+                        <div className="absolute top-4 text-sm font-medium tracking-widest uppercase">
+                            {status === 'idle' && <span className="text-slate-500">Ready to Call</span>}
+                            {status === 'listening' && <span className="text-blue-400 animate-pulse">Listening...</span>}
+                            {status === 'processing' && <span className="text-orange-400">Processing...</span>}
+                            {status === 'speaking' && <span className="text-green-400">Rekha Speaking...</span>}
                         </div>
-                        <div class="p-2 space-y-1 max-h-[300px] overflow-y-auto" id="fileList"></div>
+
+                        {/* The Orb */}
+                        <div className={`w-40 h-40 rounded-full transition-all duration-500 ${
+                            status === 'idle' ? 'orb-idle' :
+                            status === 'listening' ? 'orb-listening' :
+                            status === 'processing' ? 'orb-processing' :
+                            status === 'speaking' ? 'orb-speaking' : ''
+                        }`}></div>
+
+                        {/* Error Message Toast */}
+                        {errorMsg && (
+                            <div className="absolute bottom-4 bg-red-500/90 text-white px-4 py-2 rounded-lg text-xs max-w-[80%] text-center">
+                                {errorMsg}
+                            </div>
+                        )}
                     </div>
 
-                    <div class="glass-panel p-4 rounded-xl">
-                        <div class="flex justify-between items-center mb-3">
-                            <h3 class="text-sm font-semibold text-white">Live System Output</h3>
-                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                        </div>
-                        <div id="liveLogs" class="font-mono text-xs space-y-2 h-32 overflow-hidden relative">
-                            <div class="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-gray-900 to-transparent pointer-events-none"></div>
-                        </div>
+                    {/* Transcript Box */}
+                    <div className="h-48 bg-slate-950 border-t border-slate-800 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                        {transcript.length === 0 ? (
+                            <div className="text-center text-slate-600 text-sm mt-10">
+                                Conversation transcript will appear here...
+                            </div>
+                        ) : (
+                            transcript.map((line, idx) => (
+                                <div key={idx} className={`flex ${line.role === 'User' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                                        line.role === 'User' 
+                                            ? 'bg-blue-600 text-white rounded-br-none' 
+                                            : 'bg-slate-800 text-slate-200 rounded-bl-none'
+                                    }`}>
+                                        <span className="text-xs font-bold opacity-50 block mb-0.5">{line.role}</span>
+                                        {line.text}
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- SECTION 2: CLIENTS PAGE -->
-        <div id="clientsArea" class="hidden flex-1 overflow-y-auto p-6 space-y-6 relative section-view">
-            <h2 class="text-2xl font-bold text-white mb-6">Client Management</h2>
-            <div id="clientsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- SECTION 3: RECORDINGS PAGE (Enhanced) -->
-        <div id="recordingsArea" class="hidden flex-1 overflow-y-auto p-6 space-y-6 relative section-view">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-white">Global Recordings Repository</h2>
-                <div class="flex gap-2">
-                    <!-- Feature 8: Export Tool -->
-                    <button onclick="exportData()" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white px-4 py-2 rounded-lg text-sm"><i class="fa-solid fa-download"></i> Export CSV</button>
-                    <input type="text" placeholder="Search files..." class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent-500">
-                    <button class="bg-accent-600 hover:bg-accent-500 text-white px-4 py-2 rounded-lg text-sm"><i class="fa-solid fa-filter"></i> Filter</button>
-                </div>
-            </div>
-            
-            <div class="glass-panel rounded-xl overflow-hidden">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-800/50 text-gray-400 text-xs uppercase">
-                        <tr>
-                            <th class="p-4 font-medium">Filename</th>
-                            <th class="p-4 font-medium">Client</th>
-                            <!-- Feature 6: Sentiment & QA Score -->
-                            <th class="p-4 font-medium">Sentiment</th> 
-                            <th class="p-4 font-medium">QA Score</th>
-                            <th class="p-4 font-medium">Status</th>
-                            <th class="p-4 font-medium">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recordingsTableBody" class="text-sm divide-y divide-gray-800">
-                        <!-- Injected via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Feature 1: Knowledge Base Page -->
-        <div id="knowledgeArea" class="hidden flex-1 overflow-y-auto p-6 space-y-6 relative section-view">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-white">Knowledge Base</h2>
-                    <p class="text-sm text-gray-400">Upload documents to train the bot's contextual awareness.</p>
-                </div>
-                <button onclick="addDocument()" class="bg-accent-600 hover:bg-accent-500 text-white px-4 py-2 rounded-lg text-sm"><i class="fa-solid fa-plus"></i> Add Document</button>
-            </div>
-            
-            <div id="knowledgeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- Feature 10: Settings Page -->
-        <div id="settingsArea" class="hidden flex-1 overflow-y-auto p-6 space-y-6 relative section-view">
-            <h2 class="text-2xl font-bold text-white mb-6">Settings & API</h2>
-            
-            <div class="glass-panel p-6 rounded-xl max-w-2xl">
-                <h3 class="text-lg font-bold text-white mb-4">API Configuration</h3>
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm text-gray-400 mb-1">Production API Key</label>
-                        <div class="flex gap-2">
-                            <input id="apiKeyInput" type="password" value="sk_live_93849283492834" readonly class="flex-1 bg-gray-900 border border-gray-700 rounded px-3 py-2 text-gray-300 font-mono text-sm">
-                            <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm"><i class="fa-solid fa-eye"></i></button>
-                            <button class="bg-gray-800 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm"><i class="fa-solid fa-copy"></i></button>
-                        </div>
+                    {/* Controls */}
+                    <div className="p-6 bg-slate-900 border-t border-slate-800">
+                        {status === 'idle' ? (
+                            <button 
+                                onClick={startCall}
+                                className="w-full py-4 bg-green-600 hover:bg-green-500 active:bg-green-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-green-900/20 flex items-center justify-center gap-2 transition-all"
+                            >
+                                <Icon name="phone" /> Initiate Call
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={hangupCall}
+                                className="w-full py-4 bg-red-600 hover:bg-red-500 active:bg-red-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-red-900/20 flex items-center justify-center gap-2 transition-all"
+                            >
+                                <Icon name="phone-off" /> Disconnect
+                            </button>
+                        )}
                     </div>
-                    <div class="pt-4 border-t border-gray-800">
-                         <button onclick="regenerateApiKey()" class="text-red-400 text-sm hover:underline">Regenerate Keys</button>
-                    </div>
+
+                    {/* Settings Modal */}
+                    <SettingsModal 
+                        isOpen={isSettingsOpen} 
+                        onClose={() => setIsSettingsOpen(false)}
+                        settings={settings}
+                        onSave={saveSettings}
+                    />
+
                 </div>
-            </div>
-        </div>
+            );
+        };
 
-    </main>
-
-    <!-- Modal: Add Client (Unchanged) -->
-    <div id="addClientModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <div class="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg p-6 shadow-2xl transform scale-95 transition-transform duration-300 max-h-[90vh] overflow-y-auto">
-            <h2 class="text-xl font-bold text-white mb-4">Add New Client</h2>
-            <form id="addClientForm" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Client Name</label>
-                        <input type="text" id="newClientName" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-accent-500" placeholder="e.g. Acme Corp Support" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Recordings Needed</label>
-                        <input type="number" id="newClientRecs" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-accent-500" placeholder="e.g. 500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Usage Limit (Mins)</label>
-                        <input type="number" id="newClientLimit" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-accent-500" placeholder="e.g. 1000">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Goal with this Bot</label>
-                    <textarea id="newClientGoal" rows="3" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-accent-500 text-sm" placeholder="Describe main purpose"></textarea>
-                </div>
-                <div class="border-t border-gray-800 pt-4">
-                    <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Upload Voice Recordings</label>
-                    <div class="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center hover:border-gray-500 transition-colors bg-gray-800/30 relative">
-                        <input type="file" id="newClientFiles" multiple class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="updateFileCount(this)">
-                        <div id="uploadPlaceholder">
-                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-600 mb-2"></i>
-                            <p class="text-sm text-gray-400">Drag & drop or click to upload</p>
-                        </div>
-                        <div id="fileCountDisplay" class="hidden">
-                            <i class="fa-solid fa-file-audio text-accent-500 text-xl mb-1"></i>
-                            <p class="text-sm text-white font-medium"><span id="fileCountNum">0</span> files selected</p>
-                        </div>
-                    </div>
-                    <div id="uploadProgress" class="hidden mt-3">
-                        <div class="flex justify-between text-xs text-gray-400 mb-1"><span>Uploading...</span><span id="uploadPercent">0%</span></div>
-                        <div class="w-full bg-gray-800 rounded-full h-1.5"><div id="uploadBar" class="bg-accent-500 h-1.5 rounded-full" style="width: 0%"></div></div>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-6">
-                    <button type="button" onclick="closeModal('addClientModal')" class="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
-                    <button type="submit" id="submitClientBtn" class="px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-sm font-medium">Create Client</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal: Start Testing (Unchanged) -->
-    <div id="testingModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
-        <!-- Step 0: Scripts -->
-        <div id="testStep0" class="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-6 shadow-2xl transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-list-check text-accent-500"></i> Select Test Script</h2>
-                <button onclick="closeModal('testingModal')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="flex items-center gap-2 mb-3 text-xs text-gray-500 px-1">
-                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-green-500"></div> Ready</span>
-                <span class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-yellow-500"></div> Dev</span>
-            </div>
-            <div id="scriptSelectionList" class="space-y-2 mb-6 max-h-60 overflow-y-auto pr-1"></div>
-            <button onclick="goToPhoneInput()" id="scriptNextBtn" disabled class="w-full bg-gray-800 text-gray-500 py-2.5 rounded-lg font-medium transition-colors cursor-not-allowed">Select a Ready Script</button>
-        </div>
-
-        <!-- Step 1: Phone -->
-        <div id="testStep1" class="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-6 shadow-2xl hidden transform scale-95 transition-transform duration-300">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-phone text-accent-500"></i> Target Device</h2>
-                <button onclick="closeModal('testingModal')" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="bg-gray-800/50 p-3 rounded-lg border border-gray-700 mb-6 flex items-center justify-between">
-                <span class="text-xs text-gray-400 uppercase">Selected Script</span>
-                <span id="selectedScriptNameDisplay" class="text-sm font-medium text-accent-400">--</span>
-            </div>
-            <div class="mb-6">
-                <label class="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Target Phone Number</label>
-                <div class="flex">
-                    <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-700 bg-gray-800 text-gray-400 text-sm font-mono">+91</span>
-                    <input type="tel" id="testPhone" class="flex-1 min-w-0 block w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-r-lg text-white focus:ring-accent-500 focus:border-accent-500 text-sm font-mono tracking-wider" placeholder="98765 43210">
-                </div>
-            </div>
-            <div class="flex gap-3">
-                <button onclick="backToScripts()" class="px-4 py-2.5 text-sm text-gray-400 hover:text-white border border-gray-700 rounded-lg hover:bg-gray-800">Back</button>
-                <button id="runTestBtn" onclick="runTestSequence()" class="flex-1 bg-accent-600 hover:bg-accent-500 text-white py-2.5 rounded-lg font-medium transition-colors">Start Simulation <i class="fa-solid fa-signal ml-2 text-xs"></i></button>
-            </div>
-        </div>
-
-        <!-- Step 2: Terminal -->
-        <div id="testStep2" class="bg-gray-950 border border-gray-700 rounded-xl w-full max-w-lg p-6 shadow-2xl hidden font-mono text-sm">
-            <div class="flex items-center gap-2 border-b border-gray-800 pb-3 mb-3">
-                <div class="w-3 h-3 rounded-full bg-red-500"></div><div class="w-3 h-3 rounded-full bg-yellow-500"></div><div class="w-3 h-3 rounded-full bg-green-500"></div>
-                <span class="text-gray-500 text-xs ml-2">Console: root@voice-node-alpha</span>
-            </div>
-            <div id="terminalOutput" class="h-48 overflow-y-auto space-y-1 text-gray-300 p-2"></div>
-        </div>
-
-        <!-- Step 3: Success -->
-        <div id="testStep3" class="bg-gray-900 border border-success/30 rounded-xl w-full max-w-lg p-8 shadow-2xl text-center hidden relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-success to-emerald-400"></div>
-            <div class="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-paper-plane text-2xl text-success"></i></div>
-            <h3 class="text-2xl font-bold text-white mb-2">Call Initiated</h3>
-            <div class="bg-gray-800/50 rounded-lg p-4 mb-6 border border-gray-700 text-left">
-                <div class="flex justify-between items-center mb-2"><p class="text-xs text-gray-500 uppercase">Script</p><p class="text-xs text-white" id="successScriptDisplay">--</p></div>
-                <div class="h-px bg-gray-700 my-2"></div>
-                <p class="text-sm text-gray-300"><span class="text-accent-400 font-mono">>></span> Estimated Time: <span class="text-yellow-400 font-bold font-mono" id="dynamicTime">--</span></p>
-            </div>
-            <p class="text-sm text-gray-400">System is dialing <span id="confirmPhone" class="text-white font-mono"></span>.</p>
-            <button onclick="closeModal('testingModal')" class="mt-6 px-6 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm border border-gray-600 transition-colors">Close</button>
-        </div>
-    </div>
-
-    <!-- MAIN APP LOGIC -->
-    <script type="module" src="script.js"></script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
