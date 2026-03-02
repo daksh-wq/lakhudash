@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Component } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
@@ -20,7 +21,38 @@ import Telecom from './pages/Telecom.jsx';
 import Billing from './pages/Billing.jsx';
 import FollowUps from './pages/FollowUps.jsx';
 import Toast from './components/Toast.jsx';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ServerCrash } from 'lucide-react';
+
+// Global error boundary — catches uncaught render errors and shows a friendly page
+class ErrorBoundary extends Component {
+    constructor(props) { super(props); this.state = { hasError: false }; }
+    static getDerivedStateFromError() { return { hasError: true }; }
+    componentDidCatch(error, info) { console.error('ErrorBoundary caught:', error, info); }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                    <div className="text-center p-8 max-w-md">
+                        <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+                            <ServerCrash size={28} className="text-red-500" />
+                        </div>
+                        <h1 className="text-xl font-bold text-gray-900 mb-2">Something went wrong</h1>
+                        <p className="text-gray-500 text-sm mb-6">
+                            A page failed to render. Please try navigating back.
+                        </p>
+                        <button
+                            onClick={() => this.setState({ hasError: false })}
+                            className="px-4 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 function ProtectedRoute({ children }) {
     const { user, loading } = useAuth();
@@ -42,32 +74,32 @@ export default function App() {
     return (
         <AuthProvider>
             <Toast />
-            <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                    <Route index element={<Navigate to="/dashboard" replace />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="supervisor" element={<LiveSupervisor />} />
-                    <Route path="agents" element={<AgentStudio />} />
-                    <Route path="knowledge" element={<KnowledgeBase />} />
-                    <Route path="simulation" element={<Simulation />} />
-                    <Route path="dialer" element={<Dialer />} />
-                    <Route path="analytics" element={<Analytics />} />
-                    <Route path="routing" element={<Routing />} />
-                    <Route path="integrations" element={<Integrations />} />
-                    <Route path="security" element={<Security />} />
-                    <Route path="settings" element={<Settings />} />
-
-                    {/* New Enterprise Routes */}
-                    <Route path="wfm" element={<WFM />} />
-                    <Route path="qa" element={<QA />} />
-                    <Route path="reports" element={<Reports />} />
-                    <Route path="telecom" element={<Telecom />} />
-                    <Route path="billing" element={<Billing />} />
-                    <Route path="followups" element={<FollowUps />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
+            <ErrorBoundary>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+                        <Route index element={<Navigate to="/dashboard" replace />} />
+                        <Route path="dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+                        <Route path="supervisor" element={<ErrorBoundary><LiveSupervisor /></ErrorBoundary>} />
+                        <Route path="agents" element={<ErrorBoundary><AgentStudio /></ErrorBoundary>} />
+                        <Route path="knowledge" element={<ErrorBoundary><KnowledgeBase /></ErrorBoundary>} />
+                        <Route path="simulation" element={<ErrorBoundary><Simulation /></ErrorBoundary>} />
+                        <Route path="dialer" element={<ErrorBoundary><Dialer /></ErrorBoundary>} />
+                        <Route path="analytics" element={<ErrorBoundary><Analytics /></ErrorBoundary>} />
+                        <Route path="routing" element={<ErrorBoundary><Routing /></ErrorBoundary>} />
+                        <Route path="integrations" element={<ErrorBoundary><Integrations /></ErrorBoundary>} />
+                        <Route path="security" element={<ErrorBoundary><Security /></ErrorBoundary>} />
+                        <Route path="settings" element={<ErrorBoundary><Settings /></ErrorBoundary>} />
+                        <Route path="wfm" element={<ErrorBoundary><WFM /></ErrorBoundary>} />
+                        <Route path="qa" element={<ErrorBoundary><QA /></ErrorBoundary>} />
+                        <Route path="reports" element={<ErrorBoundary><Reports /></ErrorBoundary>} />
+                        <Route path="telecom" element={<ErrorBoundary><Telecom /></ErrorBoundary>} />
+                        <Route path="billing" element={<ErrorBoundary><Billing /></ErrorBoundary>} />
+                        <Route path="followups" element={<ErrorBoundary><FollowUps /></ErrorBoundary>} />
+                    </Route>
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+            </ErrorBoundary>
         </AuthProvider>
     );
 }

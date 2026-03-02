@@ -35,22 +35,26 @@ export default function Dashboard() {
     useEffect(() => {
         Promise.all([api.kpis(), api.abTest(), api.events()]).then(([k, ab, ev]) => {
             setKPIs(k); setABTest(ab); setEvents(ev);
-        }).catch(() => showToast('Failed to load dashboard data', 'error'));
+        }).catch(() => { });
 
-        // WebSocket for live updates
-        const ws = new WebSocket(`${WS_URL}?type=dashboard`);
-        wsRef.current = ws;
-        ws.onmessage = (e) => {
-            try {
-                const msg = JSON.parse(e.data);
-                if (msg.type === 'kpi') {
-                    setKPIs(msg.data);
-                    setChartData(genChartData());
-                    if (msg.data.events?.length) setEvents(msg.data.events);
-                }
-            } catch { }
-        };
-        return () => ws.close();
+        // WebSocket for live updates — only in dev
+        if (!WS_URL) return;
+        try {
+            const ws = new WebSocket(`${WS_URL}?type=dashboard`);
+            wsRef.current = ws;
+            ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.type === 'kpi') {
+                        setKPIs(msg.data);
+                        setChartData(genChartData());
+                        if (msg.data.events?.length) setEvents(msg.data.events);
+                    }
+                } catch { }
+            };
+            ws.onerror = () => { };
+            return () => ws.close();
+        } catch { }
     }, []);
 
     return (
